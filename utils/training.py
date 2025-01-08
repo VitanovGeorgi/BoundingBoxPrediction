@@ -151,6 +151,168 @@ def test_one_epoch_resnet18(
     logger.log_metrics(predictions)
 
 
+def train_one_epoch_vgg16(
+    model: torch.nn.Module,
+    train_loader: torch.utils.data.DataLoader,
+    optimizer: torch.optim.Optimizer,
+    loss_fn: torch.nn.Module,
+    metric: Metric,
+    device: torch.device,
+    epoch: int,
+    logger,
+) -> None:
+    """
+        Train the model for one epoch.
+
+        Args:
+            train_loader (torch.utils.data.DataLoader): The training data loader.
+            model (torch.nn.Module): The model.
+            optimizer (torch.optim.Optimizer): The optimizer.
+            device (torch.device): The device to run the training on.
+            epoch (int): The epoch number.
+            loss_fn (torch.nn.Module): The loss function.
+            logger: The logger object.
+    """
+
+    model.train()
+    metric.reset()
+
+    for _, batch in enumerate(tqdm(train_loader, desc=f"Training epoch {epoch + 1}", leave=True, position=0)):
+        images, image_names, targets = batch
+        # Forward pass
+        outputs = model(images.to(device))
+        # Backward pass
+        optimizer.zero_grad()
+        # Compute the loss
+        # loss = sum(loss for loss in outputs.values())
+        loss = loss_fn(outputs, targets.to(device)) 
+        # epoch_loss += loss.item()
+        loss.backward()
+        optimizer.step()
+        # Update the metric
+        metric.update(loss.item())
+    # Calculate and log metrics
+    metrics = metric.compute()
+    logger.log_metrics(metrics, step=epoch + 1)
+
+
+def validate_one_epoch_vgg16(
+    model: torch.nn.Module,
+    val_loader: torch.utils.data.DataLoader,
+    loss_fn: torch.nn.Module,
+    metric: Metric,
+    device: torch.device,
+    epoch: int,
+    logger
+) -> None:
+    """
+        Validate the model for one epoch.
+
+        Args:
+            val_loader (torch.utils.data.DataLoader): The validation data loader.
+            model (torch.nn.Module): The model.
+            device (torch.device): The device to run the training on.
+            epoch (int): The epoch number.
+            loss_fn (torch.nn.Module): The loss function.
+            logger: The logger object.
+    """
+
+    model.eval()
+    metric.reset()
+
+    with torch.no_grad():
+        for _, batch in enumerate(tqdm(val_loader, desc=f"Validation epoch {epoch + 1}", leave=True, position=0)):
+            images, image_names, targets = batch
+            # Forward pass
+            outputs = model(images.to(device))
+            # Compute the loss
+            loss = loss_fn(outputs, targets.to(device)) 
+            # epoch_loss += loss.item()
+            # Update the metric
+            metric.update(loss.item())
+    # Calculate and log metrics
+    metrics = metric.compute()
+    logger.log_metrics(metrics, step=epoch + 1)
+
+
+
+def test_one_epoch_vgg16(
+    model: torch.nn.Module,
+    test_loader: torch.utils.data.DataLoader,
+    loss_fn: torch.nn.Module,
+    metric: Metric,
+    device: torch.device,
+    epoch: int,
+    logger
+) -> None:
+    """
+        Test the model for one epoch. 
+        
+        Args:
+            model (torch.nn.Module): The model.
+            test_loader (torch.utils.data.DataLoader): The test data loader.
+            loss_fn (torch.nn.Module): The loss function.
+            metric: The metric object.
+            device (torch.device): The device to run the training on.
+            epoch (int): The epoch number.
+            logger: The logger object.
+
+    """
+    model.eval()
+    metric.reset()
+
+    with torch.no_grad():
+        for _, batch in enumerate(tqdm(test_loader, desc=f"Test epoch {epoch + 1}", leave=True, position=0)):
+            images, image_names, targets = batch
+            # Forward pass
+            outputs = model(images.to(device))
+            # Compute the loss
+            loss = loss_fn(outputs, targets.to(device)) 
+            # epoch_loss += loss.item()
+            # Update the metric
+            metric.update(loss.item())
+    # Calculate and log metrics
+    metrics = metric.compute()
+    logger.log_metrics(metrics, step=epoch + 1)
+    
+
+
+def get_train_one_epoch(model) -> callable:
+    """
+    Get the train_one_epoch function for the model.
+    """
+    if model == "resnet18":
+        return train_one_epoch_resnet18
+    elif model == "vgg16":
+        return train_one_epoch_vgg16
+    else:
+        raise NotImplementedError(f"Model {model} not implemented!")
+
+def get_validate_one_epoch(model) -> callable:
+    """
+    Get the validate_one_epoch function for the model.
+    """
+    if model == "resnet18":
+        return validate_one_epoch_resnet18
+    elif model == "vgg16":
+        return validate_one_epoch_vgg16
+    else:
+        raise NotImplementedError(f"Model {model} not implemented!")
+
+def get_test_one_epoch(model) -> callable:
+    """
+    Get the test_one_epoch function for the model.
+    """
+    if model == "resnet18":
+        return test_one_epoch_resnet18
+    elif model == "vgg16":
+        return test_one_epoch_vgg16
+    else:
+        raise NotImplementedError(f"Model {model} not implemented!")
+
+
+
+
 
 
 def create_optimizer(config: DictConfig, model) -> torch.optim.Optimizer:
@@ -175,8 +337,6 @@ def create_optimizer(config: DictConfig, model) -> torch.optim.Optimizer:
     elif config.optimizer.optimizer == "adam":
         return torch.optim.Adam(optim_params)
     
-
-
 
 class CustomMetrics(Metric):
     """

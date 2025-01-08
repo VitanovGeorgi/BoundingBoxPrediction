@@ -4,25 +4,6 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 
-
-
-
-
-
-
-
-
-
-def custom_colate(data):
-    """ 
-        We would need this if we had more than one object to be detected in the image, of the same class.
-    Since we don't, we don't need this, i.e. no need of a custom collate function.
-    """
-    return data
-
-
-
-
 def get_FastRCNN(num_classes : int = 2) -> torch.nn.Module:
     """
     Get the FastRCNN model with the number of classes specified in the configuration file.

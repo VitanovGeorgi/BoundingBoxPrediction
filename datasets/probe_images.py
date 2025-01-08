@@ -10,7 +10,7 @@ import json
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from torchvision.transforms import ToTensor
+from torchvision import transforms
 from omegaconf import DictConfig
 from sklearn.model_selection import train_test_split
 
@@ -129,6 +129,8 @@ class ProbeImages_DatasetGenerator(Dataset):
         self.labelspath = os.path.join(root_dir, labels_json_name) # we know it's only one json file
         if model == "resnet18":
             self.label_dict = create_label_dict_x1_y1_x2_y2(self.labelspath)
+        if model == "vgg16":
+            self.label_dict = create_label_dict_x1_y1_x2_y2(self.labelspath)
         else:
             self.label_dict = create_label_dict_x_y_w_h(self.labelspath)
         self.transform = transform
@@ -182,27 +184,67 @@ def get_probe_images_datasets(cfg: DictConfig, random_state: torch.Generator = 4
 
     train_imgs, val_imgs, test_imgs, labels_images_json_name = train_test_split_probe_images(cfg.data.root_dir, random_state)
 
-    # train_transform = transforms.Compose([
-    #     transforms.Resize((cfg.data.image_size, cfg.data.image_size)),
-    #     transforms.RandomHorizontalFlip(),
-    #     transforms.RandomVerticalFlip(),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=cfg.data.mean, std=cfg.data.std)
-    # ])
-    # val_transform = transforms.Compose([
-    #     transforms.Resize((cfg.data.image_size, cfg.data.image_size)),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=cfg.data.mean, std=cfg.data.std)
-    # ])
-    # test_transform = transforms.Compose([
-    #     transforms.Resize((cfg.data.image_size, cfg.data.image_size)),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=cfg.data.mean, std=cfg.data.std)
-    # ])
+    
 
-    train_transform = ToTensor()
-    val_transform = ToTensor()
-    test_transform = ToTensor()
+    if cfg.training.apply_augmentation:
+        """ 
+            The transformations were chosen randomly. They can be changed to anything else.
+            The sole consideration was not to alter the geometry of the iamge, as we aren't changing the bounding boxes.
+        """
+        train_transform_aux = transforms.Compose([
+            transforms.GaussianBlur(kernel_size=3),
+            transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+        ])
+        val_transform_aux = transforms.Compose([
+            transforms.GaussianBlur(kernel_size=3),
+            transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+        ])
+        test_transform_aux = transforms.Compose([
+            transforms.GaussianBlur(kernel_size=3),
+            transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+        ])
+    else:
+        train_transform_aux = transforms.Compose([])
+        val_transform_aux = transforms.Compose([])
+        test_transform_aux = transforms.Compose([])
+
+
+    train_transform = transforms.Compose([
+        transforms.ToTensor(),
+    ] + train_transform_aux.transforms)
+    val_transform = transforms.Compose([
+        transforms.ToTensor(),
+    ] + val_transform_aux.transforms)
+    test_transform = transforms.Compose([
+        transforms.ToTensor(),
+    ] + test_transform_aux.transforms)
+
+
+
+    if cfg.model.model == "vgg16":
+        train_transform = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.Grayscale(num_output_channels=3),
+            ] + train_transform.transforms
+              + [transforms.Normalize(mean=[0.1307, 0.1307, 0.1307], std=[0.3081, 0.3081, 0.3081])] # values chosen from MNIST greyscale
+        )
+        val_transform = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.Grayscale(num_output_channels=3),
+            ] + val_transform.transforms
+              + [transforms.Normalize(mean=[0.1307, 0.1307, 0.1307], std=[0.3081, 0.3081, 0.3081])]
+        )
+        test_transform = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.Grayscale(num_output_channels=3),
+            ] + test_transform.transforms
+              + [transforms.Normalize(mean=[0.1307, 0.1307, 0.1307], std=[0.3081, 0.3081, 0.3081])]
+        )
+
+
 
     # Datasets
     image_datasets = {
@@ -217,13 +259,15 @@ def get_probe_images_datasets(cfg: DictConfig, random_state: torch.Generator = 4
             root_dir=cfg.data.root_dir, 
             images_list=val_imgs, 
             labels_json_name=labels_images_json_name,
-            transform=val_transform
+            transform=val_transform,
+            model=cfg.model.model
         ),
         "test": ProbeImages_DatasetGenerator(
             root_dir=cfg.data.root_dir, 
             images_list=test_imgs, 
             labels_json_name=labels_images_json_name,
-            transform=test_transform
+            transform=test_transform,
+            model=cfg.model.model
         )
     }
 

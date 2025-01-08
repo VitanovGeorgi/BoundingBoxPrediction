@@ -11,7 +11,8 @@ from utils.utils import reset_random_seeds
 from utils.logger import set_logger_paths, WandBLogger
 from utils.data import get_data_loaders
 from utils.training import create_optimizer, CustomMetrics, \
-      train_one_epoch_resnet18, validate_one_epoch_resnet18, test_one_epoch_resnet18
+      get_train_one_epoch, get_validate_one_epoch, get_test_one_epoch 
+      
 
 from models.models import create_model
 from models.losses import create_loss
@@ -84,6 +85,10 @@ def train(cfg):
     )
     num_epochs = cfg.training.epochs
 
+    train_one_epoch = get_train_one_epoch(cfg.model.model)
+    validate_one_epoch = get_validate_one_epoch(cfg.model.model)
+    test_one_epoch = get_test_one_epoch(cfg.model.model)
+
     for epoch in range(num_epochs):
         """
             We will have the training and validation steps, encapsulated in a function, i.e. train_one_epoch and validate_one_epoch.
@@ -94,33 +99,20 @@ def train(cfg):
         """
         print(f"Epoch {epoch + 1}")
         
-        train_one_epoch_resnet18(
+        train_one_epoch(
             model, train_loader, optimizer, loss_fn, metrics, device, epoch, logger
         )
-        if epoch % cfg.training.validate_per_epoch == 0:
-            validate_one_epoch_resnet18(
-                model, val_loader, device, epoch, logger
+        if epoch + 1 % cfg.training.validate_per_epoch == 0:
+            validate_one_epoch(
+                model, val_loader, loss_fn, metrics, device, epoch, logger
             )
         lr_scheduler.step()
-        # for _, batch in enumerate(tqdm(train_loader, desc=f"Training epoch {epoch + 1}", leave=True, position=0)):
-        #     images, image_names, targets = batch
-        #     # Move to device
-        #     images_input = [img.to(device) for img in images]
-        #     targets_input = [{k: v.to(device) for k, v in t.items()} for t in targets]
-        #     # Forward pass
-        #     outputs = model(images_input, targets_input)
-        #     loss = sum(loss for loss in outputs.values())
-        #     epoch_loss += loss.item()
-        #     optimizer.zero_grad()
-        #     loss.backward()
-        #     optimizer.step()
-        # print(f"Epoch {epoch + 1} Loss: {epoch_loss}")
-    
+
     # --------------------------
     # Test the model
     # --------------------------
-    test_one_epoch_resnet18(
-        model, test_loader, device, logger
+    test_one_epoch(
+        model, test_loader, loss_fn, metrics, device, epoch, logger
     )
 
     # save the model

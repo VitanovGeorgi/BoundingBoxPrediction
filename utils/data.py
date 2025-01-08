@@ -33,6 +33,33 @@ def collate_resnet18(batch):
         )
     return imgs, imgs_names, targets
 
+def collate_vgg16(batch):
+    """
+        Collate function for the vgg16 model, as we need the batch to be of form (images, targets). Additionally the targets
+        need to be normalised in [0, 1]. So the model is: images go in, targets come out. The targets are the bounding boxes.
+
+        Now normalisation could also have been done in the dataset class, when we were modifying the labels, because we would have
+        access to the image sizes there. But we decided to do it here, because all images are the same size, and we didn't want to 
+        overload the dataset class any further.
+
+        Also VGG16 expects the inputs to be [batch_size, 3, 224, 224], and the targets to be [batch_size, 4], where the 4 is the bounding box.
+    """
+    imgs = []
+    imgs_names = []
+    targets = []
+    for img, img_name, target in batch:
+        imgs.append(img)
+        imgs_names.append(img_name)
+        targets.append(torch.tensor(
+            [
+                target["bbox"][0] / 640,
+                target["bbox"][1] / 400,
+                target["bbox"][2] / 640,
+                target["bbox"][3] / 400
+            ]
+        ))
+    return torch.stack(imgs), imgs_names, torch.stack(targets)
+
 def collate_fn(batch):
     return batch
 
@@ -47,6 +74,8 @@ def get_collate_function(cfg: DictConfig):
 
     if cfg.model.model == 'resnet18':
         return collate_resnet18
+    elif cfg.model.model == 'vgg16':
+        return collate_vgg16
         
     return collate_fn
 
@@ -60,7 +89,7 @@ def get_data_loaders(cfg: DictConfig, gen: torch.Generator) -> tuple:
     Args:
         cfg (DictConfig): The configuration dictionary.
         gen (torch.Generator): The random generator.
-
+☺
     Returns:
         tuple: The training, validation, and test data loaders
     """
