@@ -6,7 +6,7 @@ import uuid
 
 import torch
 
-from utils.utils import load_config, load_config_omega
+from utils.utils import init_distributed_mode, load_config_omega
 from utils.workers import train
 
 
@@ -28,4 +28,7 @@ if __name__ == '__main__':
     print("Project directory:", project_dir)
     print("Config:", cfg)
 
+    if cfg.distributed.use_distributed:
+        init_distributed_mode(cfg)
+        
     train(cfg)

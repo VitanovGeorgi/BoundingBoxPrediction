@@ -2,6 +2,8 @@
     Utility functions for training.
 """
 
+from typing import Optional
+
 import torch
 import torchvision
 from torchmetrics import Metric
@@ -18,6 +20,7 @@ def train_one_epoch_resnet18(
     device: torch.device,
     epoch: int,
     logger,
+    rank: int = Optional[int]
 ) -> None:
     """
     Train the model for one epoch.
@@ -37,8 +40,8 @@ def train_one_epoch_resnet18(
     for _, batch in enumerate(tqdm(train_loader, desc=f"Training epoch {epoch + 1}", leave=True, position=0)):
         images, image_names, targets = batch
         # Move to device
-        images_input = [img.to(device) for img in images]
-        targets_input = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        images_input = [img.to(device, non_blocking=True) for img in images]
+        targets_input = [{k: v.to(device, non_blocking=True) for k, v in t.items()} for t in targets]
         # Forward pass
         outputs = model(images_input, targets_input)
         # Backward pass
@@ -52,8 +55,13 @@ def train_one_epoch_resnet18(
         # Update the metric
         metric.update(loss.item())
     # Calculate and log metrics
-    metrics = metric.compute()
-    logger.log_metrics(metrics, step=epoch + 1)
+    if rank is not None:
+        if rank == 0:
+            metrics = metric.compute()
+            logger.log_metrics(metrics, step=epoch + 1)
+    else:
+        metrics = metric.compute()
+        logger.log_metrics(metrics, step=epoch + 1)
     metric.reset()
 
 
@@ -62,7 +70,8 @@ def validate_one_epoch_resnet18(
     val_loader: torch.utils.data.DataLoader,
     device: torch.device,
     epoch: int,
-    logger
+    logger,
+    rank: int = Optional[int]
 ) -> None:
     """
     Validate the model for one epoch.
@@ -84,8 +93,8 @@ def validate_one_epoch_resnet18(
         for _, batch in enumerate(tqdm(val_loader, desc=f"Validation epoch {epoch + 1}", leave=True, position=0)):
             images, image_names, targets = batch
             # Move to device
-            images_input = [img.to(device) for img in images]
-            targets_input = [{k: v.to(device) for k, v in t.items()} for t in targets]
+            images_input = [img.to(device, non_blocking=True) for img in images]
+            targets_input = [{k: v.to(device, non_blocking=True) for k, v in t.items()} for t in targets]
             # Forward pass
             outputs = model(images_input)
             # Compute the loss
@@ -104,7 +113,8 @@ def test_one_epoch_resnet18(
     model: torch.nn.Module,
     test_loader: torch.utils.data.DataLoader,
     device: torch.device,
-    logger
+    logger,
+    rank: int = Optional[int]
 ) -> None:
     """
     Test the model for one epoch. Well the model is tested in a single epoch, the naming is just for consistency.
@@ -135,8 +145,8 @@ def test_one_epoch_resnet18(
         for _, batch in enumerate(tqdm(test_loader, desc=f"Testing", leave=True, position=0)):
             images, image_names, targets = batch
             # Move to device
-            images_input = [img.to(device) for img in images]
-            targets_input = [{k: v.to(device) for k, v in t.items()} for t in targets]
+            images_input = [img.to(device, non_blocking=True) for img in images]
+            targets_input = [{k: v.to(device, non_blocking=True) for k, v in t.items()} for t in targets]
             # Forward pass
             outputs = model(images_input)
             # Extract the predicitons
@@ -160,6 +170,7 @@ def train_one_epoch_vgg16(
     device: torch.device,
     epoch: int,
     logger,
+    rank: int = Optional[int]
 ) -> None:
     """
         Train the model for one epoch.
@@ -180,20 +191,25 @@ def train_one_epoch_vgg16(
     for _, batch in enumerate(tqdm(train_loader, desc=f"Training epoch {epoch + 1}", leave=True, position=0)):
         images, image_names, targets = batch
         # Forward pass
-        outputs = model(images.to(device))
+        outputs = model(images.to(device, non_blocking=True))
         # Backward pass
         optimizer.zero_grad()
         # Compute the loss
         # loss = sum(loss for loss in outputs.values())
-        loss = loss_fn(outputs, targets.to(device)) 
+        loss = loss_fn(outputs, targets.to(device, non_blocking=True)) 
         # epoch_loss += loss.item()
         loss.backward()
         optimizer.step()
         # Update the metric
         metric.update(loss.item())
     # Calculate and log metrics
-    metrics = metric.compute()
-    logger.log_metrics(metrics, step=epoch + 1)
+    if rank is not None:
+        if rank == 0:
+            metrics = metric.compute()
+            logger.log_metrics(metrics, step=epoch + 1)
+    else:
+        metrics = metric.compute()
+        logger.log_metrics(metrics, step=epoch + 1)
 
 
 def validate_one_epoch_vgg16(
@@ -203,7 +219,8 @@ def validate_one_epoch_vgg16(
     metric: Metric,
     device: torch.device,
     epoch: int,
-    logger
+    logger,
+    rank: int = Optional[int]
 ) -> None:
     """
         Validate the model for one epoch.
@@ -224,16 +241,20 @@ def validate_one_epoch_vgg16(
         for _, batch in enumerate(tqdm(val_loader, desc=f"Validation epoch {epoch + 1}", leave=True, position=0)):
             images, image_names, targets = batch
             # Forward pass
-            outputs = model(images.to(device))
+            outputs = model(images.to(device, non_blocking=True))
             # Compute the loss
-            loss = loss_fn(outputs, targets.to(device)) 
+            loss = loss_fn(outputs, targets.to(device, non_blocking=True)) 
             # epoch_loss += loss.item()
             # Update the metric
             metric.update(loss.item())
-    # Calculate and log metrics
-    metrics = metric.compute()
-    logger.log_metrics(metrics, step=epoch + 1)
-
+    # Calculate and log metrics        
+    if rank is not None:
+        if rank == 0:
+            metrics = metric.compute()
+            logger.log_metrics(metrics, step=epoch + 1)
+    else:
+        metrics = metric.compute()
+        logger.log_metrics(metrics, step=epoch + 1)
 
 
 def test_one_epoch_vgg16(
@@ -243,7 +264,8 @@ def test_one_epoch_vgg16(
     metric: Metric,
     device: torch.device,
     epoch: int,
-    logger
+    logger,
+    rank: int = Optional[int]
 ) -> None:
     """
         Test the model for one epoch. 
@@ -265,16 +287,20 @@ def test_one_epoch_vgg16(
         for _, batch in enumerate(tqdm(test_loader, desc=f"Test epoch {epoch + 1}", leave=True, position=0)):
             images, image_names, targets = batch
             # Forward pass
-            outputs = model(images.to(device))
+            outputs = model(images.to(device, non_blocking=True))
             # Compute the loss
-            loss = loss_fn(outputs, targets.to(device)) 
+            loss = loss_fn(outputs, targets.to(device, non_blocking=True)) 
             # epoch_loss += loss.item()
             # Update the metric
             metric.update(loss.item())
     # Calculate and log metrics
-    metrics = metric.compute()
-    logger.log_metrics(metrics, step=epoch + 1)
-    
+    if rank is not None:
+        if rank == 0:
+            metrics = metric.compute()
+            logger.log_metrics(metrics, step=epoch + 1)
+    else:
+        metrics = metric.compute()
+        logger.log_metrics(metrics, step=epoch + 1)
 
 
 def get_train_one_epoch(model) -> callable:

@@ -6,8 +6,19 @@ import os
 import numpy as np
 import random
 import torch
+import torch.distributed as dist
+
 import yaml
 from omegaconf import OmegaConf, DictConfig
+
+
+
+def init_distributed_mode(args):
+    # Initialize the distributed process group
+    dist.init_process_group(backend="nccl", init_method="env://")
+    torch.cuda.set_device(args.local_rank)
+    args.rank = dist.get_rank()
+    args.world_size = dist.get_world_size()
 
 
 def load_config(path) -> dict:

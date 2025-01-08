@@ -36,3 +36,12 @@ training:
 logging:
   project: "my_project" # Name of the wandb project
   mode: "offline" # Whether to log to wand [online, offline, disabled]
+
+
+distributed:
+  use_distributed: False # Whether to use distributed training [True, False]
+  backend: "nccl" # Backend for distributed training ["nccl", "gloo"]
+  world_size: 1 # Number of GPUs to use
+  rank: 0 # Rank of the current GPU
+  master_addr: "localhost" # Address of the master GPU
+  master_port: 12355 # Port of the master GPU

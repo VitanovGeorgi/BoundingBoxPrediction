@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.distributed import DistributedSampler
 import torchvision.transforms as transforms
 from omegaconf import DictConfig
 
@@ -105,13 +106,20 @@ def get_data_loaders(cfg: DictConfig, gen: torch.Generator) -> tuple:
     # Create the data loaders
     # --------------------------
 
+    if cfg.distributed.use_distributed:
+        train_sampler = DistributedSampler(train_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.rank)
+        validation_sampler = DistributedSampler(validation_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.rank)
+        test_sampler = DistributedSampler(test_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.rank)
+
+
     train_loader = DataLoader(
         train_set,
         batch_size=cfg.data.batch_size,
         shuffle=True,
         num_workers=cfg.data.num_workers,
         generator=gen,
-        collate_fn=get_collate_function(cfg)
+        collate_fn=get_collate_function(cfg),
+        sampler=train_sampler if cfg.distributed.use_distributed else None
     )
     val_loader = DataLoader(
         validation_set,
@@ -119,7 +127,8 @@ def get_data_loaders(cfg: DictConfig, gen: torch.Generator) -> tuple:
         shuffle=True,
         num_workers=cfg.data.num_workers,
         generator=gen,
-        collate_fn=get_collate_function(cfg)
+        collate_fn=get_collate_function(cfg),
+        sampler=validation_sampler if cfg.distributed.use_distributed else None
     )
     test_loader = DataLoader(
         test_set,
@@ -127,7 +136,8 @@ def get_data_loaders(cfg: DictConfig, gen: torch.Generator) -> tuple:
         shuffle=True,
         num_workers=cfg.data.num_workers,
         generator=gen,
-        collate_fn=get_collate_function(cfg)
+        collate_fn=get_collate_function(cfg),
+        sampler=test_sampler if cfg.distributed.use_distributed else None
     )
 
     return train_loader, val_loader, test_loader

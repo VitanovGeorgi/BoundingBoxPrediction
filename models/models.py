@@ -34,5 +34,10 @@ def create_model(cfg: DictConfig) -> torch.nn.Module:
     else:
         raise ValueError(f"Model {cfg.model.name} not recognized.")
 
-    return model
+    return torch.nn.parallel.DistributedDataParallel(
+        model, 
+        device_ids=[cfg.distributed.rank],  # what is rank? And should I get it from args??
+        output_device=cfg.distributed.rank, 
+        find_unused_parameters=True
+    ) if cfg.distributed.use_distributed else model
 

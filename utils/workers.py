@@ -98,13 +98,17 @@ def train(cfg):
         so we just do epoch + 1 for validation.
         """
         print(f"Epoch {epoch + 1}")
+
+        if cfg.distributed.use_distributed:
+            train_loader.sampler.set_epoch(epoch)
+            val_loader.sampler.set_epoch(epoch)
         
         train_one_epoch(
-            model, train_loader, optimizer, loss_fn, metrics, device, epoch, logger
+            model, train_loader, optimizer, loss_fn, metrics, device, epoch, logger, cfg.distributed.rank if cfg.distributed.use_distributed else None
         )
         if epoch + 1 % cfg.training.validate_per_epoch == 0:
             validate_one_epoch(
-                model, val_loader, loss_fn, metrics, device, epoch, logger
+                model, val_loader, loss_fn, metrics, device, epoch, logger, cfg.distributed.rank if cfg.distributed.use_distributed else None
             )
         lr_scheduler.step()
 
