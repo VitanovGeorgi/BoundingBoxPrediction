@@ -1,0 +1,36 @@
+random_seed: 42
+output_path: "experiments/results" # Path to save the model
+experiment_name: "default"
+save_model: False # Whether to save the model [True, False]
+
+
+data:
+  name: "probe_images"
+  root_dir: "datasets/probe_images"
+  batch_size: 24
+  num_workers: 2
+
+
+
+model:
+  model: "resnet18" # Name of the model
+  tag: 'scbm' # Model's tag for wandb logging
+  num_classes: 2 # Number of classes in the dataset
+  save_model_path: "experiments/saved_models" # Path to save the model
+  load_model_path: "" # Path to load the model
+
+
+optimizer:
+  lr: 0.001
+  weight_decay: 0
+  optimizer: "adam" # Name of the optimizer ["adam", "sgd"]
+  decrease_every: 150 # Frequency of the learning rate decrease
+  lr_divisor: 2 # Rate of the learning rate decrease
+
+training:
+  epochs: 2 # Number of epochs for training
+  validate_per_epoch: 1 # Periodicity to evaluate the model
+
+logging:
+  project: "my_project" # Name of the wandb project
+  mode: "offline" # Whether to log to wand [online, offline, disabled]
