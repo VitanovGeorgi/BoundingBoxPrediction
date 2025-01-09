@@ -198,17 +198,17 @@ def train_one_epoch_vgg16(
         # loss = sum(loss for loss in outputs.values())
         loss = loss_fn(outputs, targets.to(device, non_blocking=True)) 
         # epoch_loss += loss.item()
-        loss.backward()
+        loss.mean().backward()
         optimizer.step()
         # Update the metric
-        metric.update(loss.item())
+        metric.update(loss.mean().item(), type="train")
     # Calculate and log metrics
     if rank is not None:
         if rank == 0:
-            metrics = metric.compute()
+            metrics = metric.compute(type="train")
             logger.log_metrics(metrics, step=epoch + 1)
     else:
-        metrics = metric.compute()
+        metrics = metric.compute(type="train")
         logger.log_metrics(metrics, step=epoch + 1)
 
 
@@ -246,14 +246,14 @@ def validate_one_epoch_vgg16(
             loss = loss_fn(outputs, targets.to(device, non_blocking=True)) 
             # epoch_loss += loss.item()
             # Update the metric
-            metric.update(loss.item())
+            metric.update(loss.mean().item(), type="val")
     # Calculate and log metrics        
     if rank is not None:
         if rank == 0:
-            metrics = metric.compute()
+            metrics = metric.compute(type="val")
             logger.log_metrics(metrics, step=epoch + 1)
     else:
-        metrics = metric.compute()
+        metrics = metric.compute(type="val")
         logger.log_metrics(metrics, step=epoch + 1)
 
 
@@ -292,15 +292,15 @@ def test_one_epoch_vgg16(
             loss = loss_fn(outputs, targets.to(device, non_blocking=True)) 
             # epoch_loss += loss.item()
             # Update the metric
-            metric.update(loss.item())
+            metric.update(loss.mean().item(), type="test")
     # Calculate and log metrics
     if rank is not None:
         if rank == 0:
-            metrics = metric.compute()
-            logger.log_metrics(metrics, step=epoch + 1)
+            metrics = metric.compute(type="test")
+            logger.log_metrics(metrics, step=epoch)
     else:
-        metrics = metric.compute()
-        logger.log_metrics(metrics, step=epoch + 1)
+        metrics = metric.compute(type="test")
+        logger.log_metrics(metrics, step=epoch)
 
 
 def get_train_one_epoch(model) -> callable:
@@ -328,6 +328,7 @@ def get_validate_one_epoch(model) -> callable:
 def get_test_one_epoch(model) -> callable:
     """
     Get the test_one_epoch function for the model.
+    Test functions are similar (almost identical) to the validation ones
     """
     if model == "resnet18":
         return test_one_epoch_resnet18
@@ -371,14 +372,32 @@ class CustomMetrics(Metric):
 
     def __init__(self, device):
         super().__init__()
-        self.add_state("loss", default=torch.tensor(0.0, device=device), dist_reduce_fx="sum")
+        self.add_state("train_loss", default=torch.tensor(0.0, device=device), dist_reduce_fx="sum")
+        self.add_state("val_loss", default=torch.tensor(0.0, device=device), dist_reduce_fx="sum")
+        self.add_state("test_loss", default=torch.tensor(0.0, device=device), dist_reduce_fx="sum")
 
-    def update(self, loss):
-        self.loss += loss
-
-    def compute(self):
-        return {
-            "loss": self.loss,
-        }
+    def update(self, loss, type: str = "train"):
+        if type == "train":
+            self.train_loss += loss
+        elif type == "val":
+            self.val_loss += loss
+        elif type == "test":
+            self.test_loss += loss
+        else:
+            raise ValueError(f"Type {type} not recognized.")
+        
+    def compute(self, type: str = "train"):
+        if type == "train":
+            return {
+                "train_loss": self.train_loss,
+            }
+        elif type == "val":
+            return {
+                "val_loss": self.val_loss,
+            }
+        elif type == "test":
+            return {
+                "test_loss": self.test_loss,
+            }
     
 

@@ -74,7 +74,7 @@ def generate_yaml_combinations(
     output_dir.mkdir(exist_ok=True)
 
     output_subdir = Path(output_dir) / "configs"
-    output_subdir.mkdir(exist_ok=True)
+    output_subdir.mkdir(exist_ok=True, parents=True)
 
     # Generate a YAML file for each combination
     for i, combo in enumerate(combinations, 1):

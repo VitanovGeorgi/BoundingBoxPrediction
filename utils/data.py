@@ -107,15 +107,15 @@ def get_data_loaders(cfg: DictConfig, gen: torch.Generator) -> tuple:
     # --------------------------
 
     if cfg.distributed.use_distributed:
-        train_sampler = DistributedSampler(train_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.rank)
-        validation_sampler = DistributedSampler(validation_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.rank)
-        test_sampler = DistributedSampler(test_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.rank)
+        train_sampler = DistributedSampler(train_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.local_rank)
+        validation_sampler = DistributedSampler(validation_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.local_rank)
+        test_sampler = DistributedSampler(test_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.local_rank)
 
     if not cfg.inference:
         train_loader = DataLoader(
             train_set,
             batch_size=cfg.data.batch_size,
-            shuffle=True,
+            shuffle=True if not cfg.distributed.use_distributed else True,
             num_workers=cfg.data.num_workers,
             generator=gen,
             collate_fn=get_collate_function(cfg),
@@ -124,10 +124,11 @@ def get_data_loaders(cfg: DictConfig, gen: torch.Generator) -> tuple:
         val_loader = DataLoader(
             validation_set,
             batch_size=cfg.data.batch_size,
-            shuffle=True,
+            shuffle=False,
             num_workers=cfg.data.num_workers,
             generator=gen,
             collate_fn=get_collate_function(cfg),
+            # could lead to eval on diff GPUs, so we could not do this in distributed mode
             sampler=validation_sampler if cfg.distributed.use_distributed else None
         )
     else:
@@ -137,7 +138,7 @@ def get_data_loaders(cfg: DictConfig, gen: torch.Generator) -> tuple:
     test_loader = DataLoader(
         test_set,
         batch_size=cfg.data.batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=cfg.data.num_workers,
         generator=gen,
         collate_fn=get_collate_function(cfg),

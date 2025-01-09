@@ -2,13 +2,13 @@ random_seed: 42
 output_path: "experiments/results" # Path to save the model
 experiment_name: "default"
 save_model: False # Whether to save the model [True, False]
-inference: True # Whether to perform inference [True, False]
+inference: False # Whether to perform inference [True, False]
 
 data:
   name: "probe_images"
   root_dir: "datasets/probe_images"
-  batch_size: 24
-  num_workers: 2
+  batch_size: [12, 24, 48]
+  num_workers: [2, 4, 6]
 
 
 model:
@@ -20,27 +20,24 @@ model:
 
 
 optimizer:
-  lr: [0.001, 0.01]
+  lr: [0.01, 0.001]
   weight_decay: 0
-  optimizer: ["adam", "sgd"] # Name of the optimizer ["adam", "sgd"]
+  optimizer: "adam" # Name of the optimizer ["adam", "sgd"]
   decrease_every: 150 # Frequency of the learning rate decrease
   lr_divisor: 2 # Rate of the learning rate decrease
 
 training:
-  epochs: [2, 5, 10] # Number of epochs for training
-  validate_per_epoch: [1, 5] # Periodicity to evaluate the model
+  epochs: 20 # Number of epochs for training
+  validate_per_epoch: 5 # Periodicity to evaluate the model
   loss: "mse" # Name of the loss function, which may correpond to the model as they have custom loss functions ["vgg16", "resnet18", "mse"]
   apply_augmentation: True # Whether to apply data augmentation [True, False]
 
 logging:
   project: "my_project" # Name of the wandb project
-  mode: "offline" # Whether to log to wand [online, offline, disabled]
+  mode: "online" # Whether to log to wand [online, offline, disabled]
 
 
 distributed:
   use_distributed: False # Whether to use distributed training [True, False]
   backend: "nccl" # Backend for distributed training ["nccl", "gloo"]
-  world_size: 1 # Number of GPUs to use
-  rank: 0 # Rank of the current GPU
-  master_addr: "localhost" # Address of the master GPU
-  master_port: 12355 # Port of the master GPU
+  

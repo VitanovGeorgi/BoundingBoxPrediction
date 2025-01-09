@@ -36,8 +36,8 @@ def create_model(cfg: DictConfig) -> torch.nn.Module:
 
     return torch.nn.parallel.DistributedDataParallel(
         model, 
-        device_ids=[cfg.distributed.rank],  # what is rank? And should I get it from args??
-        output_device=cfg.distributed.rank, 
+        device_ids=[cfg.distributed.local_rank],  # what is rank? And should I get it from args??
+        output_device=cfg.distributed.local_rank, 
         find_unused_parameters=True
     ) if cfg.distributed.use_distributed else model
 

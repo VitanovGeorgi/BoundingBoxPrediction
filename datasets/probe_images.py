@@ -176,7 +176,7 @@ def train_test_split_probe_images(root_dir: str, random_state: torch.Generator =
     Returns:
         tuple: The train, validation, test sets.
     """
-
+    
     probe_images_dir = os.listdir(root_dir)
     probe_images = [img for img in probe_images_dir if "jpg" in img]
     labels_images_json_name = [img for img in probe_images_dir if "json" in img][0]

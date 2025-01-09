@@ -1,7 +1,6 @@
 
 from pathlib import Path
-import time
-import uuid
+import pdb
 
 import torch
 import torch.optim as optim
@@ -39,6 +38,7 @@ def train(cfg):
     gen_random_seed = reset_random_seeds(cfg['random_seed'])
 
     # Device
+    # torch.cuda.set_device(cfg.distributed.local_rank)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Additional info when using cuda
@@ -113,11 +113,11 @@ def train(cfg):
                 val_loader.sampler.set_epoch(epoch)
             
             train_one_epoch(
-                model, train_loader, optimizer, loss_fn, metrics, device, epoch, logger, cfg.distributed.rank if cfg.distributed.use_distributed else None
+                model, train_loader, optimizer, loss_fn, metrics, device, epoch, logger, cfg.distributed.local_rank if cfg.distributed.use_distributed else None
             )
-            if epoch + 1 % cfg.training.validate_per_epoch == 0:
+            if (epoch + 1) % cfg.training.validate_per_epoch == 0:
                 validate_one_epoch(
-                    model, val_loader, loss_fn, metrics, device, epoch, logger, cfg.distributed.rank if cfg.distributed.use_distributed else None
+                    model, val_loader, loss_fn, metrics, device, epoch, logger, cfg.distributed.local_rank if cfg.distributed.use_distributed else None
                 )
             lr_scheduler.step()
 
@@ -128,7 +128,7 @@ def train(cfg):
     test_one_epoch = get_test_one_epoch(cfg.model.model)
 
     test_one_epoch(
-        model, test_loader, loss_fn, metrics, device, num_epochs, logger
+        model, test_loader, loss_fn, metrics, device, num_epochs, logger, cfg.distributed.local_rank if cfg.distributed.use_distributed else None
     )
 
     # save the model
@@ -138,6 +138,10 @@ def train(cfg):
         print(f"\nTRAINING FINISHED, MODEL SAVED AS {model_save_path}!", flush=True)
     else:
         print("\nTRAINING FINISHED!", flush=True)
+    
+    if cfg.demo:
+        print("DEMO MODE ACTIVATED! END OF TRAINING!")
+        return model, test_loader, metrics
 
     x = 0
 

@@ -2,7 +2,7 @@ random_seed: 42
 output_path: experiments/results
 experiment_name: default
 save_model: false
-inference: true
+inference: false
 data:
   name: probe_images
   root_dir: datasets/probe_images
@@ -17,21 +17,17 @@ model:
 optimizer:
   lr: 0.001
   weight_decay: 0
-  optimizer: sgd
+  optimizer: adam
   decrease_every: 150
   lr_divisor: 2
 training:
-  epochs: 2
+  epochs: 20
   validate_per_epoch: 5
   loss: mse
   apply_augmentation: true
 logging:
   project: my_project
-  mode: offline
+  mode: online
 distributed:
   use_distributed: false
   backend: nccl
-  world_size: 1
-  rank: 0
-  master_addr: localhost
-  master_port: 12355
