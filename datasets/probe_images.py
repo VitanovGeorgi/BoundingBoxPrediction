@@ -147,15 +147,24 @@ class ProbeImages_DatasetGenerator(Dataset):
         return image, self.images[idx], self.label_dict[self.images[idx]]
 
 
-def train_val_test_split(data: list, train_size: float, val_size: float, test_size: float, random_state: torch.Generator = 42) -> tuple:
+def train_val_test_split(
+        data: list, 
+        train_size: float = 0.7, 
+        val_size: float = 0.2, 
+        test_size: float = 0.1, 
+        random_state: torch.Generator = 42,
+        inference: bool = False
+) -> tuple:
     """
     Given a list of data, split it into train, validation, and test sets. There's nothing to check whether they sum up to 1.
     """
-    train, val_test = train_test_split(data, test_size=val_size + test_size, random_state=random_state)
+    train, val_test = train_test_split(data, train_size=train_size, random_state=random_state)
     val, test = train_test_split(val_test, test_size=test_size / (val_size + test_size), random_state=random_state)
+    if inference:
+        return [], [], data
     return train, val, test
 
-def train_test_split_probe_images(root_dir: str, random_state: torch.Generator = 42) -> tuple:
+def train_test_split_probe_images(root_dir: str, random_state: torch.Generator = 42, inference: bool = False) -> tuple:
     """
     Given the root directory of the probe images, split them into train, validation, and test sets.
     We know that there are only the jpg images in the directory and the one json file which is the legend.
@@ -171,7 +180,15 @@ def train_test_split_probe_images(root_dir: str, random_state: torch.Generator =
     probe_images_dir = os.listdir(root_dir)
     probe_images = [img for img in probe_images_dir if "jpg" in img]
     labels_images_json_name = [img for img in probe_images_dir if "json" in img][0]
-    train_imgs, val_imgs, test_imgs = train_val_test_split(probe_images, train_size=0.7, val_size=0.2, test_size=0.1, random_state=random_state)
+    train_imgs, val_imgs, test_imgs = train_val_test_split(
+        probe_images, 
+        train_size=0.7, 
+        val_size=0.2, 
+        test_size=0.1, 
+        random_state=random_state, 
+        inference=inference
+    )
+
     return train_imgs, val_imgs, test_imgs, labels_images_json_name
 
 
@@ -182,7 +199,7 @@ def get_probe_images_datasets(cfg: DictConfig, random_state: torch.Generator = 4
         Returns the datasets for the probe images. Here is where we can make different transforms to the images.
     """
 
-    train_imgs, val_imgs, test_imgs, labels_images_json_name = train_test_split_probe_images(cfg.data.root_dir, random_state)
+    train_imgs, val_imgs, test_imgs, labels_images_json_name = train_test_split_probe_images(cfg.data.root_dir, random_state, inference=cfg.inference)
 
     
 

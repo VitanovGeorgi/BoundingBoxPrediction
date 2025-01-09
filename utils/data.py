@@ -111,25 +111,29 @@ def get_data_loaders(cfg: DictConfig, gen: torch.Generator) -> tuple:
         validation_sampler = DistributedSampler(validation_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.rank)
         test_sampler = DistributedSampler(test_set, num_replicas=cfg.distributed.world_size, rank=cfg.distributed.rank)
 
-
-    train_loader = DataLoader(
-        train_set,
-        batch_size=cfg.data.batch_size,
-        shuffle=True,
-        num_workers=cfg.data.num_workers,
-        generator=gen,
-        collate_fn=get_collate_function(cfg),
-        sampler=train_sampler if cfg.distributed.use_distributed else None
-    )
-    val_loader = DataLoader(
-        validation_set,
-        batch_size=cfg.data.batch_size,
-        shuffle=True,
-        num_workers=cfg.data.num_workers,
-        generator=gen,
-        collate_fn=get_collate_function(cfg),
-        sampler=validation_sampler if cfg.distributed.use_distributed else None
-    )
+    if not cfg.inference:
+        train_loader = DataLoader(
+            train_set,
+            batch_size=cfg.data.batch_size,
+            shuffle=True,
+            num_workers=cfg.data.num_workers,
+            generator=gen,
+            collate_fn=get_collate_function(cfg),
+            sampler=train_sampler if cfg.distributed.use_distributed else None
+        )
+        val_loader = DataLoader(
+            validation_set,
+            batch_size=cfg.data.batch_size,
+            shuffle=True,
+            num_workers=cfg.data.num_workers,
+            generator=gen,
+            collate_fn=get_collate_function(cfg),
+            sampler=validation_sampler if cfg.distributed.use_distributed else None
+        )
+    else:
+        train_loader = None
+        val_loader = None
+        
     test_loader = DataLoader(
         test_set,
         batch_size=cfg.data.batch_size,

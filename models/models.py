@@ -29,7 +29,7 @@ def create_model(cfg: DictConfig) -> torch.nn.Module:
         raise NotImplementedError("Model not implemented yet!")
     elif cfg.model.model == 'vgg16':
         model = get_VGG16()
-    elif cfg.model.model == 'custom':
+    elif cfg.model.model == 'custom_cnn':
         model = get_customCNN()
     else:
         raise ValueError(f"Model {cfg.model.name} not recognized.")

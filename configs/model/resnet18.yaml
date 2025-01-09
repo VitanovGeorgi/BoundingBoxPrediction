@@ -1,0 +1,5 @@
+defaults: 
+  - model_defaults # Inherit model_defaults arguments
+
+model: "resnet18" # Name of the model
+num_classes: 2 # Number of classes in the dataset

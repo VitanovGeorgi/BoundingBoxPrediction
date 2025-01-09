@@ -1,0 +1,37 @@
+random_seed: 42
+output_path: experiments/results
+experiment_name: default
+save_model: false
+inference: true
+data:
+  name: probe_images
+  root_dir: datasets/probe_images
+  batch_size: 24
+  num_workers: 2
+model:
+  model: vgg16
+  tag: flyability
+  num_classes: 2
+  save_model_path: experiments/saved_models
+  load_model_path: ''
+optimizer:
+  lr: 0.001
+  weight_decay: 0
+  optimizer: sgd
+  decrease_every: 150
+  lr_divisor: 2
+training:
+  epochs: 10
+  validate_per_epoch: 1
+  loss: mse
+  apply_augmentation: true
+logging:
+  project: my_project
+  mode: offline
+distributed:
+  use_distributed: false
+  backend: nccl
+  world_size: 1
+  rank: 0
+  master_addr: localhost
+  master_port: 12355
