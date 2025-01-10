@@ -13,9 +13,9 @@ from omegaconf import DictConfig
 from datasets.probe_images import get_probe_images_datasets
 
 
-def collate_resnet18(batch):
+def collate_resnet50(batch):
     """
-        Collate function for the resnet18 model, because we additionally need the targets to be of the following form:
+        Collate function for the fasterrcnn_resnet50_fpn model, because we additionally need the targets to be of the following form:
         https://pytorch.org/vision/main/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html
 
         We need to have these functions defined outside of the get_collate_function in order to have them be pickable.
@@ -28,7 +28,7 @@ def collate_resnet18(batch):
         imgs_names.append(img_name)
         targets.append(
             {
-                "boxes": target["bbox"].unsqueeze(0), # So far the tensor was [4], we need it [N, 4], but N=1 for us (num_classes/labels - 1)
+                "boxes": target["bbox"][0]["boxes"].unsqueeze(0), # So far the tensor was [4], we need it [N, 4], but N=1 for us (num_classes/labels - 1)
                 "labels": torch.tensor([1], dtype=torch.int64)
             }
         )
@@ -73,9 +73,9 @@ def get_collate_function(cfg: DictConfig):
     resnet50 model.
     """
 
-    if cfg.model.model == 'resnet18':
-        return collate_resnet18
-    elif cfg.model.model == 'vgg16':
+    if cfg.model.model == 'fasterrcnn_resnet50_fpn':
+        return collate_resnet50
+    elif cfg.model.model == 'vgg16' or cfg.model.model == 'custom_cnn':
         return collate_vgg16
         
     return collate_fn

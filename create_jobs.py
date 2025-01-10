@@ -145,9 +145,6 @@ if __name__ == "__main__":
     script_dir = f"{args.output_dir}/scripts"
     config_dir = f"{args.output_dir}/configs"
     
-    # script_dir = Path(args.output_dir) + "/scripts"
-    # config_dir = Path(args.output_dir) + "/configs"
-
     # Ensure the output directory exists
     os.makedirs(script_dir, exist_ok=True)
 
@@ -167,3 +164,7 @@ if __name__ == "__main__":
 
             # Make the script executable
             os.chmod(script_path, 0o755)
+
+    print("Be aware that once the scripts are generated, you have to delete them manually. Otherwise, if this script is rerun \
+        it may only overwrite part of the existing scripts, leaving the rest, depending on how many new scripts it needs to generate! \
+          You can simply delete the folders inside the grid directory to start fresh.")

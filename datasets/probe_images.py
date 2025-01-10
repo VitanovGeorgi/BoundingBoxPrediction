@@ -122,14 +122,16 @@ class ProbeImages_DatasetGenerator(Dataset):
     to be included. This is done. because the split of the images is done externally, and we want a different split
     at each initialization. Here we take care of labeling the images too.
     """
-    def __init__(self, root_dir, images_list: list, labels_json_name: str, transform=None, model: str = "resnet18"):
+    def __init__(self, root_dir, images_list: list, labels_json_name: str, transform=None, model: str = "fasterrcnn_resnet50_fpn"):
         self.root_dir = root_dir
         self.images_path = os.listdir(root_dir)
         self.images = images_list
         self.labelspath = os.path.join(root_dir, labels_json_name) # we know it's only one json file
-        if model == "resnet18":
+        if model == "fasterrcnn_resnet50_fpn":
+            self.label_dict = create_label_dict_resnet50(self.labelspath)
+        elif model == "vgg16":
             self.label_dict = create_label_dict_x1_y1_x2_y2(self.labelspath)
-        if model == "vgg16":
+        elif model == "custom_cnn":
             self.label_dict = create_label_dict_x1_y1_x2_y2(self.labelspath)
         else:
             self.label_dict = create_label_dict_x_y_w_h(self.labelspath)
@@ -238,7 +240,7 @@ def get_probe_images_datasets(cfg: DictConfig, random_state: torch.Generator = 4
 
 
 
-    if cfg.model.model == "vgg16":
+    if cfg.model.model == "vgg16" or cfg.model.model == "custom_cnn":
         train_transform = transforms.Compose(
             [
                 transforms.Resize((224, 224)),

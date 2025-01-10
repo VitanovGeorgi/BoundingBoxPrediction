@@ -29,7 +29,7 @@ optimizer:
 training:
   epochs: 20 # Number of epochs for training
   validate_per_epoch: 2 # Periodicity to evaluate the model
-  loss: "mse" # Name of the loss function, which may correpond to the model as they have custom loss functions ["vgg16", "resnet18", "mse", "iou"]
+  loss: "mse" # Name of the loss function, which may correpond to the model as they have custom loss functions ["vgg16", "fasterrcnn_resnet50_fpn", "mse", "iou"]
   apply_augmentation: False # Whether to apply data augmentation [True, False]
 
 logging:

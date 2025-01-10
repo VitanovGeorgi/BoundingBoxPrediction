@@ -11,7 +11,7 @@ from tqdm import tqdm
 from omegaconf import DictConfig
 
 
-def train_one_epoch_resnet18(
+def train_one_epoch_resnet50(
     model: torch.nn.Module,
     train_loader: torch.utils.data.DataLoader,
     optimizer: torch.optim.Optimizer,
@@ -65,9 +65,11 @@ def train_one_epoch_resnet18(
     metric.reset()
 
 
-def validate_one_epoch_resnet18(
+def validate_one_epoch_resnet50(
     model: torch.nn.Module,
     val_loader: torch.utils.data.DataLoader,
+    loss_fn: torch.nn.Module,
+    metric: Metric,
     device: torch.device,
     epoch: int,
     logger,
@@ -109,10 +111,13 @@ def validate_one_epoch_resnet18(
     logger.log_metrics(predictions, step=epoch + 1)
 
 
-def test_one_epoch_resnet18(
+def test_one_epoch_resnet50(
     model: torch.nn.Module,
     test_loader: torch.utils.data.DataLoader,
+    loss_fn: torch.nn.Module,
+    metric: Metric,
     device: torch.device,
+    epoch: int,
     logger,
     rank: int = Optional[int]
 ) -> None:
@@ -306,10 +311,15 @@ def test_one_epoch_vgg16(
 def get_train_one_epoch(model) -> callable:
     """
     Get the train_one_epoch function for the model.
+
+    Now most of these functions are similar to each other, and we could have placed them all in a single function, with some if statements. 
+    But for fasterrcnn_resnet50_fpn, we are have implemented a different loss strategy then the other models, which isn't contained in the loss_fn
+    (frankly the choices were either implement it from scratch - I didn't have the time, or just play with what is saved there). So for the purposes
+    of this model, and modularity, we will keep them separate. This applies for validate_one_epoch and test_one_epoch as well.
     """
-    if model == "resnet18":
-        return train_one_epoch_resnet18
-    elif model == "vgg16":
+    if model == "fasterrcnn_resnet50_fpn":
+        return train_one_epoch_resnet50
+    elif model == "vgg16" or model == "custom_cnn":
         return train_one_epoch_vgg16
     else:
         raise NotImplementedError(f"Model {model} not implemented!")
@@ -318,9 +328,9 @@ def get_validate_one_epoch(model) -> callable:
     """
     Get the validate_one_epoch function for the model.
     """
-    if model == "resnet18":
-        return validate_one_epoch_resnet18
-    elif model == "vgg16":
+    if model == "fasterrcnn_resnet50_fpn":
+        return validate_one_epoch_resnet50
+    elif model == "vgg16" or model == "custom_cnn":
         return validate_one_epoch_vgg16
     else:
         raise NotImplementedError(f"Model {model} not implemented!")
@@ -330,9 +340,9 @@ def get_test_one_epoch(model) -> callable:
     Get the test_one_epoch function for the model.
     Test functions are similar (almost identical) to the validation ones
     """
-    if model == "resnet18":
-        return test_one_epoch_resnet18
-    elif model == "vgg16":
+    if model == "fasterrcnn_resnet50_fpn":
+        return test_one_epoch_resnet50
+    elif model == "vgg16" or model == "custom_cnn":
         return test_one_epoch_vgg16
     else:
         raise NotImplementedError(f"Model {model} not implemented!")

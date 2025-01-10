@@ -23,10 +23,8 @@ def create_model(cfg: DictConfig) -> torch.nn.Module:
     Returns:
         torch.nn.Module: The model.
     """
-    if cfg.model.model == 'resnet18':
+    if cfg.model.model == 'fasterrcnn_resnet50_fpn':
         model = get_FastRCNN(cfg.model.num_classes)
-    elif cfg.model.model == 'fasterrcnn_resnet50_fpn':
-        raise NotImplementedError("Model not implemented yet!")
     elif cfg.model.model == 'vgg16':
         model = get_VGG16()
     elif cfg.model.model == 'custom_cnn':

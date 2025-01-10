@@ -19,8 +19,8 @@ def create_loss(config: DictConfig) -> torch.nn.Module:
         torch.nn.Module: The loss function.
     """
 
-    if config.training.loss == 'resnet18':
-        loss = Resnet18Loss()
+    if config.training.loss == 'fasterrcnn_resnet50_fpn':
+        loss = Resnet50Loss()
     elif config.training.loss == 'mse':
         loss = torch.nn.MSELoss()
     elif config.training.loss == 'iou':
@@ -32,13 +32,13 @@ def create_loss(config: DictConfig) -> torch.nn.Module:
 
 
 
-class Resnet18Loss(torch.nn.Module):
+class Resnet50Loss(torch.nn.Module):
     """
         Frankly we don't need this, we could have just as easily extract the loss_box_reg in the training loop.
     We're only doing this for completeness, in case we need to add more losses in the future, or simply to keep the code consistent.
     """
     def __init__(self) -> None:
-        super(Resnet18Loss, self).__init__()
+        super(Resnet50Loss, self).__init__()
 
     def forward(self, outputs: dict) -> torch.Tensor:
         # return outputs['loss_classifier'], outputs['loss_box_reg'], outputs['loss_objectness'], outputs['loss_rpn_box_reg']
